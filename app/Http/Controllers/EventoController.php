@@ -22,9 +22,16 @@ class EventoController extends Controller
 
     public function show(string $id)
     {
-        $evento = Evento::find($id);
+        $evento = Evento::findOrFail($id);
 
-        $perguntas = Pergunta::all();
+        // Ranking: apenas as perguntas deste evento, com a contagem de votos
+        // e um flag "votou" do usuário logado, tudo numa única consulta (sem N+1).
+        $perguntas = $evento->perguntas()
+            ->withCount('votos')
+            ->withExists(['votos as votou' => fn ($query) => $query->where('users.id', Auth::id())])
+            ->orderByDesc('votos_count')
+            ->orderBy('created_at')
+            ->get();
 
         return view('eventos.show', compact('evento', 'perguntas'));
     }
@@ -61,6 +68,17 @@ class EventoController extends Controller
         // $user = User::find(Auth::id());
         // $user->eventosInscritos()->attach($evento->id);
         return back()->with('status', 'Inscrição atualizada com sucesso!');
+    }
+
+    public function votar(Pergunta $pergunta)
+    {
+        $resultado = $pergunta->votos()->toggle(auth()->id());
+
+        $mensagem = count($resultado['attached']) > 0
+            ? 'Voto registrado com sucesso!'
+            : 'Voto removido com sucesso!';
+
+        return back()->with('status', $mensagem);
     }
 
 }

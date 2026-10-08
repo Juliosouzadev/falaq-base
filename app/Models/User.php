@@ -58,4 +58,12 @@ class User extends Authenticatable
     {
         return $this->belongsToMany(Evento::class, 'evento_user')->withTimestamps();
     }
+
+    /**
+     * Perguntas em que o usuário votou (upvote) — pivot pergunta_user.
+     */
+    public function perguntasVotadas(): BelongsToMany
+    {
+        return $this->belongsToMany(Pergunta::class, 'pergunta_user')->withTimestamps();
+    }
 }
